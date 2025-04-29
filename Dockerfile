@@ -1,33 +1,28 @@
-FROM php:8.2-fpm
+FROM php:8.2-apache
 
-# Cài đặt các extension cần thiết cho Laravel
+# Cài extension Laravel cần
 RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    unzip \
-    git \
-    curl \
+    libpng-dev libonig-dev libxml2-dev zip unzip git curl \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+
+# Enable mod_rewrite để Laravel hoạt động tốt
+RUN a2enmod rewrite
+
+# Đặt thư mục làm việc
+WORKDIR /var/www/html
+
+# Copy toàn bộ source vào container
+COPY . .
+
+# Cập nhật cấu hình Apache trỏ vào thư mục public/
+RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|' /etc/apache2/sites-available/000-default.conf
 
 # Cài Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Đặt thư mục làm việc
-WORKDIR /var/www
+# Cài thư viện PHP
+RUN composer install --no-dev --optimize-autoloader
 
-# Copy toàn bộ mã nguồn vào container
-COPY . .
-
-# Cài thư viện PHP thông qua composer
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
-
-# Set quyền cho Laravel
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 755 /var/www/storage
-
-EXPOSE 8000
-
-# Chạy Laravel server nếu không có nginx
-CMD php artisan serve --host=0.0.0.0 --port=8000
+# Phân quyền thư mục
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage
