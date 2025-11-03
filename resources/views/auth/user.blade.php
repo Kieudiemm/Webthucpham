@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="content">
-    @yield('conten')
+    @yield('content')
 </div>
 <div class="main">
 

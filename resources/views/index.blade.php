@@ -30,7 +30,11 @@
     <link rel="stylesheet" href="Asset/css/style.css">
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
 
+    <link rel="stylesheet" href="Asset/css/chat.css">
+
+
   </head>
+
   <body class="goto-here">
 
     @include('header')
@@ -39,16 +43,7 @@
 </div>
   @include('footer')
 
-
-
-
-
-
-
-
-
-
-
+    @include('chat_ai')
 
   <script src="Asset/js/jquery.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
@@ -70,5 +65,7 @@
   <script src="Asset/js/main.js"></script>
   <script src="Asset/js/onclick.js"></script>
   <script src="Asset/js/cart.js"></script>
+  <<script src="Asset/js/chat.js"></script>
+
   </body>
 </html>

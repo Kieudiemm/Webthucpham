@@ -11,6 +11,7 @@ use App\Http\Controllers\OrderController;
 Use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\DeliveryController;
+use App\Http\Controllers\ChatbotController;
 
 
 /*
@@ -37,7 +38,7 @@ Route::get('/add-staff', [App\Http\Controllers\UsersController::class, 'add_staf
 Route::post('/savestaff', [App\Http\Controllers\UsersController::class, 'savestaff'])->name('savestaff');
 Route::get('/all_staff', [App\Http\Controllers\UsersController::class, 'all_staff']);
 
-Route::get('/admin', [App\Http\Controllers\AdminController::class, 'admin'])->name('admin');
+Route::get('/admin', [App\Http\Controllers\AdminController::class, 'show_dashboard'])->name('admin');
 
 Route::get('/dashboard', [App\Http\Controllers\AdminController::class, 'show_dashboard']);
 
@@ -138,6 +139,10 @@ Route::post('/loc', [App\Http\Controllers\PageController::class, 'getloc'])->nam
 
 Route::get('/thanhcong', [App\Http\Controllers\ProductsController::class, 'getthanhcong'])->name('thanhcong');
 
+
+//chatbot
+Route::get('/chat/messages', [App\Http\Controllers\ChatbotController::class, 'fetchMessages']);
+Route::post('/chat/send', [App\Http\Controllers\ChatbotController::class, 'sendMessage']);
 
 
 
