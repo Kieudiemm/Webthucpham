@@ -15,6 +15,7 @@
           <div class="container">
               <div class="row">
               <div class="col-md-12 ftco-animate">
+                <div class="cart_component">
                   <div class="cart-list "  >
                       <table class=" cartdetete table" data-url="{{ route('deletecart')}}">
                           <thead class="thead-primary">
@@ -59,8 +60,8 @@
                             </td>
 
                               <td class="total">{{number_format($item['price']*$item['quantity'])}}</td>
-                              <td class="product-remove "   ><a href="#" id="cartupdate" data-id="{{$id}}"><i class="fa-solid fa-floppy-disk"></i></a></td>
-                              <td class="product-remove "   ><a href="#" id="cartdelete" data-id="{{$id}}"><span class="ion-ios-close"></span></a></td>
+                              <td class="product-remove "   ><a href="#" class="cartupdate" data-id="{{$id}}"><i class="fa-solid fa-floppy-disk"></i></a></td>
+                              <td class="product-remove "   ><a href="#" class="cartdelete" data-id="{{$id}}"><span class="ion-ios-close"></span></a></td>
 
                             </tr><!-- END TR-->
 
@@ -75,54 +76,54 @@
                           </tbody>
                         </table>
                     </div>
+                </div>
               </div>
           </div>
           <div class="row align-items-end " style="margin-left:450px;">
 <form action="{{ route('giohang') }}" method="post" style="width: 700px;">
     @csrf
     <div class="col-md-10">
-    <div class="form-group">
-        <label for="exampleInputPassword1">Chọn thành phố</label>
-          <select name="city" id="city" class="form-control input-sm m-bot15 choose add_delivery city">
+        <div class="form-group">
+            <label>Chọn tỉnh/thành</label>
+            <select name="city" id="city" class="form-control">
+                <option value="">-- Chọn tỉnh/thành --</option>
+                @foreach ($locations as $c)
+                    <option value="{{ $c['code'] }}">{{ $c['name'] }}</option>
+                @endforeach
+            </select>
 
-                <option name="city"  value="{{ old('city') }}">--Chọn tỉnh thành phố--</option>
-            @foreach($city as $key => $ci)
-                <option value="{{$ci->matp}}">{{$ci->name_city}}</option>
-            @endforeach
-        </select>
-        @if ($errors->has('city'))
-        <span class="text-danger text-left">{{ $errors->first('city') }}</span>
-    @endif
+            @error('city')
+            <span class="text-danger">{{ $message }}</span>
+            @enderror
+        </div>
     </div>
-      </div>
-      <div class="col-md-10">
-    <div class="form-group">
-        <label for="exampleInputPassword1">Chọn quận huyện</label>
-          <select name="province" id="province" class="form-control input-sm m-bot15 province choose">
-                <option name="province"  value="{{ old('province') }}" >--Chọn quận huyện--</option>
-            @foreach($province as $key => $pro)
-                <option value="{{$pro->maqh}}">{{$pro->name_quanhuyen}}</option>
-            @endforeach
-        </select>
-        @if ($errors->has('province'))
-        <span class="text-danger text-left">{{ $errors->first('province') }}</span>
-    @endif
+
+    <div class="col-md-10">
+        <div class="form-group">
+            <label>Chọn quận/huyện</label>
+            <select name="province" id="province" class="form-control">
+                <option value="">-- Chọn quận/huyện --</option>
+            </select>
+
+            @error('province')
+            <span class="text-danger">{{ $message }}</span>
+            @enderror
+        </div>
     </div>
-      </div>
-      <div class="col-md-10"style="border-bottom: 2px solid #e1e1e1">
-      <div class="form-group">
-        <label for="exampleInputPassword1">Chọn xã phường</label>
-          <select class="form-control" name="wards" id="wards" class="form-control input-sm m-bot15 wards ward">
-                <option name="ward"  value="{{ old('ward') }}">--Chọn xã phường--</option>
-            @foreach($wards as $key => $wards)
-                <option  value="{{$wards->xaid}}">{{$wards->name_xaphuong}}</option>
-            @endforeach
-        </select>
-        @if ($errors->has('wards'))
-        <span class="text-danger text-left">{{ $errors->first('wards') }}</span>
-    @endif
+
+    <div class="col-md-10" style="border-bottom: 2px solid #e1e1e1">
+        <div class="form-group">
+            <label>Chọn xã/phường</label>
+            <select name="wards" id="wards" class="form-control">
+                <option value="">-- Chọn xã/phường --</option>
+            </select>
+
+            @error('wards')
+            <span class="text-danger">{{ $message }}</span>
+            @enderror
+        </div>
     </div>
-      </div>
+
 
                   <div class="col-md-10" style="border-bottom: 2px solid #e1e1e1">
                   <div class="form-group">
@@ -170,4 +171,87 @@
       </div>
     </div>
   </section>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+// Danh sách tỉnh → huyện → xã (lấy từ Controller)
+let locations = @json($locations);
+
+// Khi chọn tỉnh
+$('#city').on('change', function () {
+    let cityCode = $(this).val();
+
+    // Reset dropdown
+    $('#province').html('<option value="">-- Chọn quận/huyện --</option>');
+    $('#wards').html('<option value="">-- Chọn xã/phường --</option>');
+
+    if (!cityCode) return;
+
+    // Tìm tỉnh
+    let city = locations.find(item => item.code == cityCode);
+    if (!city || !city.districts) return;
+
+    city.districts.forEach(d => {
+        $('#province').append(`<option value="${d.code}">${d.name}</option>`);
+    });
+});
+
+
+// Khi chọn huyện
+$('#province').on('change', function () {
+    let districtCode = $(this).val();
+    let cityCode = $('#city').val();
+
+    $('#wards').html('<option value="">-- Chọn xã/phường --</option>');
+
+    if (!cityCode || !districtCode) return;
+
+    // Tìm tỉnh
+    let city = locations.find(item => item.code == cityCode);
+    if (!city || !city.districts) return;
+
+    // Tìm huyện theo code
+    let district = city.districts.find(d => d.code == districtCode);
+    if (!district || !district.wards) return;
+
+    district.wards.forEach(w => {
+        $('#wards').append(`<option value="${w.code}">${w.name}</option>`);
+    });
+});
+
+$(document).on('click', '.cartdelete', function (e) {
+    e.preventDefault();
+
+    let id = $(this).data('id');
+    let url = $('.cartdetete').data('url');
+
+    $.ajax({
+        type: 'GET',
+        url: url,
+        data: { id: id },
+        success: function (response) {
+            if (response.code == 200) {
+
+                // Cập nhật lại table
+                $('.cartdetete').parent().html(response.html);
+
+                // Cập nhật số lượng icon giỏ hàng
+                $('#cart-count').text(response.qty);
+
+                // Cập nhật tổng tiền
+                $('.total-price span:last-child').text(response.total);
+            }
+        }
+    });
+});
+
+
+
+</script>
+
+
 @endsection
+
+
+

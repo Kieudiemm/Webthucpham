@@ -5,7 +5,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="http://cdn.oesmith.co.uk/morris-0.4.3.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
     <script src="http://cdn.oesmith.co.uk/morris-0.4.3.min.js"></script>
@@ -179,23 +182,19 @@
 
         <script>
             Morris.Bar({
-              element: 'chart',
-              @php
-                    $date_1= $date_s -1;
-                    $date_2= $date_s -2;
-                    $date_3= $date_s -3;
-                    $date_4= $date_s -4;
-                @endphp
-              data: [
-                { date: {{$date_4}}, value: {{$order_date_4}} },
-                { date: {{$date_3}}, value: {{$order_date_3}} },
-                { date: {{$date_2}}, value: {{$order_date_2}} },
-                { date: {{$date_1}}, value:{{$order_date_1}}},
-                { date: {{$date_s}}, value: {{$order_date}} }
-              ],
-              xkey: 'date',
-              ykeys: ['value'],
-              labels: ['Đơn hàng']
+                element: 'chart',
+                data: [
+                    { date: "{{ $date_4 }}", value: {{ $order_date_4 }} },
+                    { date: "{{ $date_3 }}", value: {{ $order_date_3 }} },
+                    { date: "{{ $date_2 }}", value: {{ $order_date_2 }} },
+                    { date: "{{ $date_1 }}", value: {{ $order_date_1 }} },
+                    { date: "{{ $date }}", value: {{ $order_date }} }
+                ],
+                xkey: 'date',
+                ykeys: ['value'],
+                labels: ['Đơn hàng'],
+                hideHover: 'auto',
+                resize: true
             });
         </script>
 

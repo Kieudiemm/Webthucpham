@@ -5,175 +5,174 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Customer;
+use App\Models\Product;
+use App\Models\MongoCategory;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Mail;
-use App\Models\City;
-use App\Models\Province;
-use App\Models\Wards;
-use App\Models\Product;
 use Illuminate\Support\Facades\Redirect;
-use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Php;
 
 class ProductsController extends Controller
 {
-    public function __construct() {
-	$this->middleware('auth');
-}
-    public function getcheckout()
-
+    public function __construct()
     {
-
-        $category = DB::table('category') ->get();
-        $carts = session()->get('cart');
-        $city = City::orderby('matp','ASC')->get();
-        $province = Province::orderby('maqh','ASC')->get();
-        $wards = Wards::orderby('xaid','ASC')->get();
-        return view('pages.Product.checkout', compact('category', 'carts', 'city', 'province','wards' ));
-
+        $this->middleware('auth');
     }
-    public function checkout( Request $request)
 
+    /**
+     * Trang checkout
+     */
+    public function getcheckout()
     {
-        if ($request->Payments=='Direct'){
-            $validator = Validator ::make($request->all(),[
-                'FullName'=>'required|max:100',
-                'Address'=>'required|max:200',
+        // Lấy category, city, province, wards từ Mongo
+        $category = MongoCategory::all();
+        $carts = session()->get('cart');
+        $city = json_decode(file_get_contents('https://provinces.open-api.vn/api/?depth=1'));
+        $province = json_decode(file_get_contents('https://provinces.open-api.vn/api/p/'));
+        $wards = json_decode(file_get_contents('https://provinces.open-api.vn/api/w/'));
 
 
-                'phone'=>'required|min:10|max:10',
+        return view('pages.Product.checkout', compact('category', 'carts', 'city', 'province', 'wards'));
+    }
 
-            ],[
+    /**
+     * Xử lý checkout (Direct)
+     */
+    public function checkout(Request $request)
+    {
+        if ($request->Payments == 'Direct') {
+
+            $validator = Validator::make($request->all(), [
+                'FullName' => 'required|max:100',
+                'Address' => 'required|max:200',
+                'phone' => 'required|min:10|max:10',
+            ], [
                 'FullName.required' => 'Họ và tên là trường bắt buộc',
                 'Address.required' => 'Địa chỉ là trường bắt buộc',
-
                 'phone.required' => 'Số điện thoại là trường bắt buộc',
             ]);
 
-            if($validator->fails()){
-                return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-
+            if ($validator->fails()) {
+                return redirect()->back()->withErrors($validator)->withInput();
             }
+
             date_default_timezone_set('Asia/Ho_Chi_Minh');
-                $carts = session()->get('cart');
-                $fee = session()->get('fee');
-                $cou = session()->get('cou');
-                $id_user =Auth::guard('auth')->user()->id;
-                $Name = Auth::guard('auth')->user()->Name;
-                $allRequest  = $request->all();
-                $FullName = $allRequest['FullName'];
-                $email = Auth::guard('auth')->user()->Email;
-                $adr = session()->get('add');
-                $Address = $allRequest['Address'];
-                $phone = $allRequest['phone'];
-                $note = $allRequest['note'];
-                $add= implode(' ,', array($Address, $adr));
 
-                $date=date("Y-m-d");
+            $carts = session()->get('cart', []);
+            $fee = session()->get('fee', 0);
+            $cou = session()->get('cou', null);
 
-                foreach ($carts as $key => $item ){
-                    $user = DB::table('products')->where('product_id', $key)->first();
-                    $quantity = $item['quantity'];
-                    if($quantity > $user->quantity){
-                        Session::flash('soluong', 'Hiện tại số lượng kho còn thấp. Vui  lòng giảm số lượng thấp hơn '.$user->quantity.'. Xin lỗi vì sự bất tiện này');
-                        return redirect()->back()->withInput();
-                    }
+            $user = Auth::user();
+            $id_user = $user->id;
+            $Name = $user->Name ?? ($user->name ?? '');
+            $email = $user->Email ?? ($user->email ?? '');
 
+            $Address = $request->Address;
+            $adr = session()->get('add', '');
+            $phone = $request->phone;
+            $note = $request->note;
+            $add = trim(implode(', ', array_filter([$Address, $adr])));
+            $date = date("Y-m-d");
+
+            // Kiểm tra tồn kho bằng Product model (Mongo)
+            foreach ($carts as $product_id => $item) {
+                $product = Product::where('product_id', (string)$product_id)->first();
+                if (!$product) {
+                    Session::flash('soluong', 'Sản phẩm không tồn tại: ' . $product_id);
+                    return redirect()->back();
                 }
-        if ($customer = Customer::create([
-            'id_user' => $id_user,
-                    'FullName' => $FullName,
-                    'email' =>  $email,
-                    'Address' => $add,
-                    'phone' => $phone,
-                    'note' => $note,
-                    'Name' => $Name
-
-        ])) {
-            $c_id = $customer ->id;
-        }
-
-
-                if ($order = Order::create([
-                    'customer_id' => $c_id,
-                    'order_note' => $request ->note,
-                    'ship' => $fee,
-                    'coupon' =>$cou,
-                    'order_status' =>'0',
-                    'order_date'=>$date,
-
-                ])) {
-                    $order_id = $order ->id;
-
-
-
-
-                    foreach ($carts as $key => $item ){
-                        $quantity = $item['quantity'];
-                        $price = $item['price'];
-                        $name = $item['name'];
-                        $img = $item['image'];
-                        $product_id = $key;
-                        $pr = DB::table('products')->where('product_id', $key)->first();
-                        $dataInsertToDatabase = array(
-                            'order_id' =>$order_id,
-                            'product_id' =>$product_id,
-                            'price' => $price,
-                            'Name' => $name,
-                            'Img' => $img,
-                            'quantity' => $quantity,
-                            'date'=>$date,
-                            'Category_id'=>$pr->Category_ID,
-                        );
-                        $insertData = DB::table('order_details')->insert($dataInsertToDatabase);
-
-                    }
-
-                    return Redirect::to('thanhcong')->with('id',  $order_id);
+                if ($item['quantity'] > ($product->quantity ?? 0)) {
+                    Session::flash('soluong', 'Hiện tại số lượng kho còn: ' . ($product->quantity ?? 0) . '. Vui lòng điều chỉnh.');
+                    return redirect()->back()->withInput();
                 }
+            }
 
+            // Tạo Customer (Mongo)
+            $customer = Customer::create([
+                'id_user' => $id_user,
+                'FullName' => $request->FullName,
+                'email' => $email,
+                'Address' => $add,
+                'phone' => $phone,
+                'note' => $note,
+                'Name' => $Name,
+            ]);
 
+            $c_id = $customer->_id; // _id của Mongo
+
+            // Tạo Order (Mongo)
+            $order = Order::create([
+                'customer_id' => $c_id,
+                'order_note' => $note,
+                'ship' => $fee,
+                'coupon' => $cou,
+                'order_status' => '0',
+                'order_date' => $date,
+            ]);
+
+            $order_id = $order->_id;
+
+            // Tạo OrderDetail (Mongo) và (tuỳ chọn) giảm tồn kho
+            foreach ($carts as $product_id => $item) {
+                $pr = Product::where('product_id', (string)$product_id)->first();
+
+                OrderDetail::create([
+                    'order_id' => $order_id,
+                    'product_id' => $product_id,
+                    'price' => $item['price'],
+                    'Name' => $item['name'],
+                    'Img' => $item['image'],
+                    'quantity' => $item['quantity'],
+                    'date' => $date,
+                    'Category_id' => $pr->Category_ID ?? null,
+                ]);
+
+                // (Tùy bạn muốn) cập nhật lượng tồn kho trong products:
+                if ($pr && isset($pr->quantity)) {
+                    $newQty = max(0, $pr->quantity - $item['quantity']);
+                    $pr->update(['quantity' => $newQty]);
+                }
+            }
+
+            // Xóa giỏ (nếu muốn)
+            // session()->forget('cart');
+
+            return redirect()->route('thanhcong')->with('id', $order_id);
         } else {
             Session::flash('noatm', 'Phương thức thanh toán online chưa được áp dụng');
+            return redirect()->back();
         }
-
-
     }
+
+    /**
+     * Trang thanh cong
+     */
     public function getthanhcong()
-
     {
-        $category = DB::table('category') ->get();
-
-        return view('pages.Product.thanhcong',compact('category', ) );
-
+        $category = MongoCategory::all();
+        return view('pages.Product.thanhcong', compact('category'));
     }
-    public function all_custommer(){
-        $cus = Customer::orderby('id','DESC')->paginate(5);
+
+    /**
+     * Danh sách customer (admin)
+     */
+    public function all_custommer()
+    {
+        $cus = Customer::orderBy('_id', 'DESC')->paginate(5);
         return view('Admin.all_custommer')->with(compact('cus'));
     }
 
+    /**
+     * Trang Đơn mua của user
+     */
     public function getdonmua()
-
     {
-        $id_user =Auth::guard('auth')->user()->id;
-        $customer = Customer::where('id_user',$id_user)->get();
+        $id_user = Auth::user()->id;
+        $customer = Customer::where('id_user', $id_user)->get();
+        $category = MongoCategory::all();
 
-        $category = DB::table('category') ->get();
-    //     foreach($customer as $key => $ord){
-
-    //         $order = Order::where('customer_id',$customer->id)->get();
-    // }
-    // foreach($order as $key => $od){
-    //     $order_details = OrderDetail::where('order_id',$od->id)->first();
-    // }
-    // dd($order_details);
-        return view('pages.Product.donmua')->with('category',$category);
+        return view('pages.Product.donmua')->with('category', $category);
     }
-
-
 }

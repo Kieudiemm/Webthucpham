@@ -24,7 +24,7 @@
 		</button>
 	</div>
 @endif
-                      <form action="{{ route('checkout') }}" class="billing-form" method="POST">
+                      <form action="{{ route('checkout.submit') }}" class="billing-form" method="POST">
                         @csrf
 
                           <h3 class="mb-4 billing-heading">Thông tin khách hàng</h3>
@@ -150,7 +150,7 @@
                                         <label for="emailaddress">Ghi chú đơn hàng</label>
                                       <input name="note" type="text" class="form-control" placeholder="Ghi chú">
                                     </div>
-                                    <button class="btnRegister btn btn-primary py-3 px-4" type="submit"">Đặt hàng</button>
+                                    <button class="btnRegister btn btn-primary py-3 px-4" type="submit">Đặt hàng</button>
                                     </div>
                               </div>
                 </div>

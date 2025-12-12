@@ -27,13 +27,15 @@ use App\Http\Controllers\ChatbotController;
 
 */
 Route::group(['prefix' => 'checkout'], function () {
-    Route::get('/thanhtoan', [App\Http\Controllers\ProductsController::class, 'getcheckout'])->name('checkout');
-    Route::post('/thanhtoan', [App\Http\Controllers\ProductsController::class, 'checkout'])->name('checkout');
+    Route::get('/thanhtoan', [App\Http\Controllers\ProductsController::class, 'getcheckout'])->name('checkout.form');
+    Route::post('/thanhtoan', [App\Http\Controllers\ProductsController::class, 'checkout'])->name('checkout.submit');
     Route::post('/tinhphi', [App\Http\Controllers\PageController::class, 'tinhphi'])->name('tinhphi');
     Route::get('/thanhcong', [App\Http\Controllers\ProductsController::class, 'getthanhcong'])->name('thanhcong');
 });
+
 Route::get('/thanhtoan', [App\Http\Controllers\ProductsController::class, 'getcheckout'])->name('thanhtoan');
 Route::get('/thanhcong', [App\Http\Controllers\ProductsController::class, 'getthanhcong'])->name('thanhcong');
+
 Route::get('/add-staff', [App\Http\Controllers\UsersController::class, 'add_staff'])->name('add_staff');
 Route::post('/savestaff', [App\Http\Controllers\UsersController::class, 'savestaff'])->name('savestaff');
 Route::get('/all_staff', [App\Http\Controllers\UsersController::class, 'all_staff']);
@@ -118,10 +120,14 @@ Route::get('/tintuc', [App\Http\Controllers\PageController::class, 'gettintuc'])
 
 Route::get('/giohang', [App\Http\Controllers\PageController::class, 'getgiohang'])->name('giohang');
 Route::post('/giohang', [App\Http\Controllers\PageController::class, 'postgiohang'])->name('giohang');
+Route::get('/deletecart', [App\Http\Controllers\PageController::class, 'getdeletecart'])->name('deletecart');
 
 Route::get('/yeuthich', [App\Http\Controllers\PageController::class, 'getyeuthich'])->name('yeuthich');
+Route::post('/wishlist/add', [App\Http\Controllers\WishlistController::class, 'add'])
+    ->name('add_wishlist');
 
-Route::get('/view{id}', [App\Http\Controllers\PageController::class, 'getchitietsanpham'])->name('chitietsanpham');
+
+Route::get('/view/{id}', [App\Http\Controllers\PageController::class, 'getchitietsanpham'])->name('chitietsanpham');
 
 Route::get('/{id}', [App\Http\Controllers\PageController::class, 'getsanpham'])->name('sanpham');
 
@@ -136,14 +142,13 @@ Route::post('/timkiem', [App\Http\Controllers\PageController::class, 'gettimkiem
 Route::post('/loc', [App\Http\Controllers\PageController::class, 'getloc'])->name('loc');
 
 
-
-Route::get('/thanhcong', [App\Http\Controllers\ProductsController::class, 'getthanhcong'])->name('thanhcong');
-
-
 //chatbot
 Route::get('/chat/messages', [App\Http\Controllers\ChatbotController::class, 'fetchMessages']);
 Route::post('/chat/send', [App\Http\Controllers\ChatbotController::class, 'sendMessage']);
 
+use App\Http\Controllers\MongoCategoryController;
+
+Route::get('/category', [MongoCategoryController::class, 'index']);
 
 
 

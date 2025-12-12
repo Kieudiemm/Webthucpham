@@ -2,9 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Jenssegers\Mongodb\Auth\User as Authenticatable;   // <-- Dùng MongoDB
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
@@ -13,51 +11,31 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     use HasApiTokens;
-    use HasFactory;
     use HasProfilePhoto;
     use Notifiable;
     use TwoFactorAuthenticatable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var string[]
-     */
-    protected $table ='user';
+    protected $collection = 'user'; // tên collection trong Mongo
+    protected $primaryKey = '_id';
+
     protected $fillable = [ 'Name','Email','Password','level' ];
-    protected $primarykey = 'id';
 
     public function getAuthPassword()
     {
-        return $this->password;
+        return $this->password; //N dùng 'Password' viết hoa
     }
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array
-     */
     protected $hidden = [
-        'password',
+        'Password',
         'remember_token',
         'two_factor_recovery_codes',
         'two_factor_secret',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
 
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array
-     */
     protected $appends = [
         'profile_photo_url',
     ];

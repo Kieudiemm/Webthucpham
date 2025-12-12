@@ -50,7 +50,7 @@
         @endphp
           <tr>
             <td>{{$i}}</td>
-            <td>{{$order->id}}</td>
+            <td>{{$order->_id}}</td>
 
             <td>
                 <?php
@@ -64,19 +64,19 @@
             <td>
 
                 @if ($order -> order_status == 0)
-                <a href="{{URL::to('/handle/'.$order->id)}}" class="active" ui-toggle-class="">Duyệt</a>
+                <a href="{{URL::to('/handle/'.$order->_id)}}" class="active" ui-toggle-class="">Duyệt</a>
 
 @endif
                 </td>
             <td>
 
-              <a href="{{URL::to('/view-order/'.$order->id)}}" class="active" ui-toggle-class="">
+              <a href="{{URL::to('/view-order/'.$order->_id)}}" class="active" ui-toggle-class="">
                 <i class="fa fa-eye text-success text-active"></i>
               </a>
-              <a href="{{URL::to('/Receipt/'.$order->id)}}" class="active" ui-toggle-class="">
+              <a href="{{URL::to('/Receipt/'.$order->_id)}}" class="active" ui-toggle-class="">
                 <i class="fa-solid fa-print"></i>
               </a>
-              <a onclick="return confirm('Bạn có muốn xóa đơn hàng này không?')" href="{{URL::to('/delete-order/'.$order->id)}}" class="active" ui-toggle-class="">
+              <a onclick="return confirm('Bạn có muốn xóa đơn hàng này không?')" href="{{URL::to('/delete-order/'.$order->_id)}}" class="active" ui-toggle-class="">
                 <i class="fa fa-times text-danger text"></i>
               </a>
             </td>

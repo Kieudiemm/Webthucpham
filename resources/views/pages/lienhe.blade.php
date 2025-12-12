@@ -63,7 +63,17 @@
         </div>
 
         <div class="col-md-6 d-flex">
-            <div id="map" class="bg-white"></div>
+            <div class="bg-white" style="width:100%; height: 450px;">
+                <iframe
+                    width="100%"
+                    height="100%"
+                    frameborder="0"
+                    style="border:0"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3833.96313142616!2d108.2498083!3d15.9752995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x314219b0d48d2c89%3A0x351e9c978db963f8!2zNDcwIFRy4bqnbiDEkGnhu4FuIE5naMOhLCBIb8OgIEjhuqNpLCBOZ8O5IEjDom4gU8awbiwgxJDDoCBO4buvbmc!5e0!3m2!1svi!2s!4v1700123456789"
+                    allowfullscreen>
+                </iframe>
+            </div>
+
         </div>
       </div>
     </div>

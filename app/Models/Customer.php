@@ -1,14 +1,21 @@
 <?php
+
 namespace App\Models;
-use Illuminate\Database\Eloquent\Model;
-use DB;
+
+use Jenssegers\Mongodb\Eloquent\Model;
 
 class Customer extends Model
 {
+    protected $connection = 'mongodb';  // kết nối mongo
+    protected $collection = 'customer'; // tên collection
 
-    public $timestamps = false ;
-    protected $table = 'customer';
-    protected $fillable = [ 'id_user','FullName', 'Name', 'email','Address', 'phone', 'note' ];
-
+    protected $fillable = [
+        'id_user',
+        'FullName',
+        'Name',
+        'email',
+        'Address',
+        'phone',
+        'note'
+    ];
 }
-?>

@@ -10055,3 +10055,6 @@ ul.top-info-box > li.nav-search {
     cursor: pointer;
     color: #999;
   }
+.heart.active i {
+    color: red !important;
+}

@@ -3,137 +3,133 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
-use App\Slider;
-use App\Http\Requests;
 use Illuminate\Support\Facades\Redirect;
-session_start();
+
+use App\Models\Product;
+use App\Models\MongoCategory;
+
 class ProductController extends Controller
 {
     public function __construct() {
         $this->middleware('auth');
     }
 
-   function add_product(){
+    // ---------------------- ADD PRODUCT ----------------------
 
-        $cate_product = DB::table('category')->orderby('category_id','desc')->get();
+    public function add_product() {
+        $cate_product = MongoCategory::orderBy('Category_ID', 'desc')->get();
         return view('Admin.add_product')->with('cate_product', $cate_product);
     }
-     function save_product(Request $request){
 
-        $allRequest  = $request->all();
-        $product_id  = $allRequest['product_id'];
-        $product_name  = $allRequest['product_name'];
-        $product_price = $allRequest['product_price'];
-        $product_desc = $allRequest['product_desc'];
-        $product_content  = $allRequest['product_content'];
-        $category_id = $allRequest['product_cate'];
-        $product_status = $allRequest['product_status'];
-        $product_image = $allRequest['product_image'];
-        $product_discout = $allRequest['product_discout'];
-        $product_quantity = $allRequest['product_quantity'];
-        $hot = $allRequest['hot'];
+    // ---------------------- SAVE PRODUCT ----------------------
 
-        $sale = $allRequest['sale'];
+    public function save_product(Request $request) {
 
-        //Gán giá trị vào array
-        $dataInsertToDatabase = array(
-            'product_id'  => $product_id,
-            'Title'  => $product_name,
-            'Price' => $product_price,
-            'Discount' => $product_discout,
-            'quantity' => $product_quantity,
-            'product_desc' => $product_desc,
-            'product_content'  => $product_content,
-            'Category_ID' => $category_id,
-            'product_status' => $product_status,
-            'Thumbnail' =>   $product_image,
-            'hot' =>   $hot,
-            'sale' =>   $sale,
-        );
+        $data = $request->only([
+            'product_id',
+            'product_name',
+            'product_price',
+            'product_desc',
+            'product_content',
+            'product_cate',
+            'product_status',
+            'product_discout',
+            'product_quantity',
+            'hot',
+            'sale'
+        ]);
 
-        $get_image = $request->file('product_image');
-        if($get_image){
-            $get_name_image = $get_image->getClientOriginalName();
-            $name_image = current(explode('.',$get_name_image));
-            $new_image =  $name_image.rand(0,99).'.'.$get_image->getClientOriginalExtension();
-            $get_image->move('Asset\images',$new_image);
-            $dataInsertToDatabase['Thumbnail'] = $new_image;
-            DB::table('products')->insert($dataInsertToDatabase);
-            Session::put('message','Thêm sản phẩm thành công');
-            return Redirect::to('add-product');
+        $insert = [
+            'product_id'     => $data['product_id'],
+            'Title'          => $data['product_name'],
+            'Price'          => $data['product_price'],
+            'Discount'       => $data['product_discout'],
+            'quantity'       => $data['product_quantity'],
+            'product_desc'   => $data['product_desc'],
+            'product_content'=> $data['product_content'],
+            'Category_ID'    => $data['product_cate'],
+            'product_status' => $data['product_status'],
+            'hot'            => $data['hot'],
+            'sale'           => $data['sale']
+        ];
+
+        // Upload ảnh
+        if ($request->hasFile('product_image')) {
+            $image = $request->file('product_image');
+            $new_image = time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('Asset/images'), $new_image);
+            $insert['Thumbnail'] = $new_image;
         }
-        $data['product_image'] = '';
 
-        DB::table('products')->insert($dataInsertToDatabase);
+        Product::create($insert);
+
         Session::put('message','Thêm sản phẩm thành công');
-        return Redirect::to('all-product');
+        return Redirect::to('add-product');
     }
-    function all_product(){
 
-        $all_product = DB::table('products')->join('category','category.Category_ID','=','products.Category_ID')->orderby('products.product_id','desc')->paginate(5);;
-        $manage_product = view('admin.all_product')->with('all_product',$all_product);
-        return view('index_Admin')->with('admin.all_product',$manage_product);
-    }
-     public function edit_product($product_id){
+    // ---------------------- ALL PRODUCT ----------------------
 
-        $cate_product = DB::table('category')->orderby('Category_ID','desc')->get();
+    public function all_product() {
 
-        $edit_product = DB::table('products')->where('product_id',$product_id)->get();
+        $all_product = Product::orderBy('product_id','desc')->paginate(5);
 
-        $manager_product  = view('admin.edit_product')->with('edit_product',$edit_product)->with('cate_product',$cate_product);
-
-        return view('index_Admin')->with('admin.edit_product', $manager_product);
-    }
-    public function update_product(Request $request,$product_id){
-
-        $allRequest  = $request->all();
-        $product_name  = $allRequest['product_name'];
-        $product_price = $allRequest['product_price'];
-        $product_discount = $allRequest['product_price'];
-        $product_desc = $allRequest['product_desc'];
-        $product_content  = $allRequest['product_content'];
-        $category_id = $allRequest['product_cate'];
-        $product_status = $allRequest['product_status'];
-        // $product_image = $allRequest['product_image'];
-        $hot = $allRequest['hot'];
-        $new = $allRequest['new'];
-        $sale = $allRequest['sale'];
-
-        //Gán giá trị vào array
-        $dataInsertToDatabase = array(
-
-            'Title'  => $product_name,
-            'Price' => $product_price,
-            'Discount' => $product_discount,
-            'product_desc' => $product_desc,
-            'product_content'  => $product_content,
-            'Category_ID' => $category_id,
-            'product_status' => $product_status,
-            // 'Thumbnail' =>   $product_image,
-            'hot' =>   $hot,
-            'new' =>   $new,
-            'sale' =>   $sale,
+        return view('index_Admin')->with(
+            'admin.all_product',
+            view('admin.all_product')->with('all_product', $all_product)
         );
+    }
 
-        $get_image = $request->file('product_image');
-        if($get_image){
-            $get_name_image = $get_image->getClientOriginalName();
-            $name_image = current(explode('.',$get_name_image));
-            $new_image =  $name_image.rand(0,99).'.'.$get_image->getClientOriginalExtension();
-            $get_image->move('Asset\images',$new_image);
-            $dataInsertToDatabase['Thumbnail'] = $new_image;
-            DB::table('products')->where('product_id',$product_id)->update($dataInsertToDatabase);
-            return Redirect::to('all-product');
+    // ---------------------- EDIT PRODUCT ----------------------
+
+    public function edit_product($product_id) {
+
+        $cate_product = MongoCategory::orderBy('Category_ID','desc')->get();
+
+        $edit_product = Product::where('product_id',$product_id)->first();
+
+        return view('index_Admin')->with(
+            'admin.edit_product',
+            view('admin.edit_product')
+                ->with('edit_product',$edit_product)
+                ->with('cate_product',$cate_product)
+        );
+    }
+
+    // ---------------------- UPDATE PRODUCT ----------------------
+
+    public function update_product(Request $request,$product_id) {
+
+        $data = [
+            'Title'          => $request->product_name,
+            'Price'          => $request->product_price,
+            'Discount'       => $request->product_discount,
+            'product_desc'   => $request->product_desc,
+            'product_content'=> $request->product_content,
+            'Category_ID'    => $request->product_cate,
+            'product_status' => $request->product_status,
+            'hot'            => $request->hot,
+            'new'            => $request->new,
+            'sale'           => $request->sale,
+        ];
+
+        // Upload ảnh
+        if ($request->hasFile('product_image')) {
+            $image = $request->file('product_image');
+            $new_image = time().'.'.$image->getClientOriginalExtension();
+            $image->move(public_path('Asset/images'), $new_image);
+            $data['Thumbnail'] = $new_image;
         }
 
-        DB::table('products')->where('product_id',$product_id)->update($dataInsertToDatabase);
+        Product::where('product_id', $product_id)->update($data);
+
         return Redirect::to('all-product');
     }
-    public function delete_product($product_id){
 
-        DB::table('products')->where('product_id',$product_id)->delete();
+    // ---------------------- DELETE PRODUCT ----------------------
+
+    public function delete_product($product_id){
+        Product::where('product_id', $product_id)->delete();
         return Redirect::to('all-product');
     }
 }

@@ -5,136 +5,148 @@ namespace App\Http\Controllers;
 use App\Models\ChatMessage;
 use Illuminate\Http\Request;
 use App\Models\Product;
-use Illuminate\Contracts\Database\Eloquent\Builder;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use PHPUnit\Framework\Constraint\Operator;
 use Illuminate\Support\Str;
-
 
 class ChatbotController extends Controller
 {
-    //Get history
+    // Lấy lịch sử chat
     public function fetchMessages(Request $request)
     {
         if (Auth::check()) {
-            $msgs = ChatMessage::where('user_id', Auth::id())->orderBy('created_at')->get();
+            $msgs = ChatMessage::where('user_id', Auth::id())
+                ->orderBy('created_at', 'asc')
+                ->get();
         } else {
             $token = $request->cookie('chat_token');
-            $msgs = $token ? ChatMessage::where('guest_token', $token)->orderBy('created_at')->get() : collect();
+            $msgs = $token
+                ? ChatMessage::where('guest_token', $token)
+                    ->orderBy('created_at', 'asc')
+                    ->get()
+                : collect();
         }
+
         return response()->json($msgs);
     }
 
-    // Send message (lưu tin nhắn người dùng, gọi AI, lưu tin bot reply)
+    // Gửi tin nhắn + gọi AI
     public function sendMessage(Request $request)
     {
-        $request->validate(['message' => 'required|string|max:2000',]);
+        $request->validate(['message' => 'required|string|max:2000']);
+
         $userId = Auth::id();
-
         $guestToken = null;
-        if(!$userId) {
-            $guestToken = $request->cookie('chat_token');
-            if(!$guestToken){
-                $guestToken = 'guest_' . Str::random(32);
 
-                cookie()->queue(cookie('chat_token', $guestToken, 60 * 24 * 180));
+        // Xử lý guest token
+        if (!$userId) {
+            $guestToken = $request->cookie('chat_token');
+
+            if (!$guestToken) {
+                $guestToken = 'guest_' . Str::random(32);
+                cookie()->queue(cookie('chat_token', $guestToken, 60 * 24 * 180)); // 180 ngày
             }
         }
 
-        // Lưu tin nhắn người dùng đến DB
+        // Lưu tin nhắn người dùng
         $userMsg = ChatMessage::create([
-            'user_id' => $userId,
+            'user_id'     => $userId,
             'guest_token' => $userId ? null : $guestToken,
-            'sender' => 'user',
-            'message' => $request -> message,
+            'sender'      => 'user',
+            'message'     => $request->message,
         ]);
 
-        //prepare prompt
-        $product = Product::where('quantity', '>', 0)->get(['Title', 'Price', 'product_desc'])->map(function ($p) {
-            return "{$p->Title} - {$p->Price}";
-        })->toArray();
+        // Chuẩn bị prompt sản phẩm
+        $product = Product::where('quantity', '>', 0)
+            ->get(['Title', 'Price', 'product_desc'])
+            ->map(function ($p) {
+                return "{$p->Title} - {$p->Price}";
+            })
+            ->toArray();
+
         $productList = implode("\n", $product);
 
-        $prompt = "Bạn là trợ lý bán hàng cho website rau củ. Dưới đây là danh sách một số sản phẩm hiện có: \n$productList\n
-        Hãy trả lời ngắn ngọn, trung thực, chỉ dùng thông tin trong danh sách sản phẩm nếu cần.";
+        $prompt = "Bạn là trợ lý bán hàng cho website rau củ.
+        Danh sách sản phẩm hiện có:
+        $productList
+        Hãy trả lời ngắn gọn, đúng thông tin.";
 
+        // Lấy lịch sử chat gần nhất (MongoDB)
         $history = ChatMessage::query()
-        ->where(function($q) use ($userId, $guestToken) {
-            if ($userId) {
-                $q->where('user_id',$userId);
-            } else {
-                $q->where('guest_token', $guestToken);
-            }
-        })
-        ->latest()
-        ->limit(6)
-        ->orderBy('created_at','asc')
-        ->get();
+            ->where(function ($q) use ($userId, $guestToken) {
+                if ($userId) {
+                    $q->where('user_id', $userId);
+                } else {
+                    $q->where('guest_token', $guestToken);
+                }
+            })
+            ->orderBy('created_at', 'desc')
+            ->limit(6)
+            ->get()
+            ->sortBy('created_at'); // sắp xếp lại ASC sau khi limit
 
-
+        // Định dạng contents gửi API
         $contents = [];
         foreach ($history as $msg) {
             $contents[] = [
                 "role" => $msg->sender === 'user' ? "user" : "model",
-                "parts" => [["text" => $msg->message]]
+                "parts" => [
+                    ["text" => $msg->message]
+                ],
             ];
         }
 
         $contents[] = [
             "role" => "user",
-            "parts" => [["text" => $request->message]]
+            "parts" => [
+                ["text" => $request->message]
+            ],
         ];
 
-        // Call AI(Gemini)
-        $aiReplyText = "Xin lỗi, hiện tại Ai chưa được cấu hình";
+        // Gọi API Gemini
+        $aiReplyText = "Xin lỗi, AI chưa được cấu hình.";
+
         if (env('GOOGLE_GEMINI_API_KEY')) {
             try {
-                $url_apikey = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-                $payload = [
-                    "systemInstruction" => [
-                        "parts" => [
-                            ["text" => $prompt]
-                        ]
+                $response = Http::withHeaders([
+                    'Content-Type'  => 'application/json',
+                    'X-Goog-Api-Key'=> env('GOOGLE_GEMINI_API_KEY'),
+                ])->post(
+                    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+                    [
+                        "systemInstruction" => [
+                            "parts" => [["text" => $prompt]]
                         ],
                         "contents" => $contents
-                    ];
+                    ]
+                );
 
-                    //Call API Gemini
-                    $response = Http::withHeaders([
-                        'Content-Type' => 'application/json',
-                        'X-Goog-Api-Key' => env('GOOGLE_GEMINI_API_KEY'),
-                    ])->post($url_apikey,$payload);
-
-                    if($response->successful()) {
-                        $data = $response->json();
-                        $aiReplyText = $data['candidates'][0]['content']['parts'][0]['text']
-                            ?? "Xin lỗi, tôi chưa hiểu câu hỏi.";
-                    } else {
-                        $aiReplyText = "Xin lỗi, AI không thể xử lý lúc này.";
-                        Log::error('AI API error', ['response'=> $response->json()]);
-                    }
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $aiReplyText = $data['candidates'][0]['content']['parts'][0]['text']
+                        ?? "Xin lỗi, tôi chưa hiểu câu hỏi.";
+                } else {
+                    Log::error("Gemini API error", ['response' => $response->body()]);
+                    $aiReplyText = "Xin lỗi, AI không phản hồi.";
+                }
             } catch (\Throwable $e) {
-                Log::error('API call error: ' . $e->getMessage());
-                $aiReplyText = "Xin lỗi, hiện tại không thể kết nối AI";
+                Log::error("Gemini Exception: " . $e->getMessage());
+                $aiReplyText = "Xin lỗi, không thể kết nối AI.";
             }
         }
 
-        //Save bot reply
+        // Lưu trả lời bot vào MongoDB
         $botMsg = ChatMessage::create([
-            'user_id' => $userId,
+            'user_id'     => $userId,
             'guest_token' => $userId ? null : $guestToken,
-            'sender' => 'bot',
-            'message' => $aiReplyText,
+            'sender'      => 'bot',
+            'message'     => $aiReplyText,
         ]);
-         // Return 2 message created
-         return response()->json([
+
+        return response()->json([
             'user' => $userMsg,
-            'bot' => $botMsg,
-         ]);
-
+            'bot'  => $botMsg,
+        ]);
     }
-
 }

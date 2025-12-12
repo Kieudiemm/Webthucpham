@@ -7,7 +7,7 @@
                         </header>
                         <div class="panel-body">
                             <div class="position-center">
-                                 @foreach($edit_product as $key => $pro)
+                                 @php $pro = $edit_product; @endphp
                                 <form role="form" action="{{URL::to('/update-product/'.$pro->product_id)}}" method="post" enctype="multipart/form-data">
                                     {{csrf_field()}}
                                 <div class="form-group">
@@ -71,7 +71,6 @@
 
                                 <button type="submit" name="add_product" class="btn btn-info">Cập nhập sản phẩm</button>
                             </form>
-                            @endforeach
                             </div>
 
                         </div>

@@ -14,73 +14,92 @@ use App\Models\Freeship;
 use Illuminate\Contracts\Session\Session as SessionSession;
 use Illuminate\Support\Facades\Session;
 use App\Models\Coupon;
+use App\Models\MongoCategory;
+use App\Models\Blog;
+use App\Models\Contact;
+
+
 
 use Symfony\Component\Console\Input\Input;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Redirect;
 class PageController extends Controller
 {
-	 public function getindex()
+
+    public function getindex()
     {
-        $blog = DB::table('blog')->orderby('id','desc')->get();
-        $hot = DB::table('products') -> where('hot','1')->orderby('id','desc')->paginate(12);
-        $category = DB::table('category') ->get();
-        return view('pages.trangchu', compact('hot', 'blog', 'category' )) ;
+        $blog = Blog::orderBy('_id', 'desc')->get()->map(function($item){
 
+        // Nếu BlogImg là array → lấy phần tử đầu tiên
+            if (is_array($item->BlogImg)) {
+                $item->BlogImg = $item->BlogImg[0] ?? '';
+            }
 
+            return $item;
+        });
 
+        $hot = ModelsProduct::where('hot',1)->orderby('id','desc')->take(12)->get();
+        $category = MongoCategory::all();
+
+        return view('pages.trangchu', compact('hot', 'blog', 'category'));
     }
+
     public function gettimkiem(Request $request)
 
     {
         $key= $request->key;
 
-        $search = DB::table('products') -> where('Title','like', '%'.$key.'%')->paginate(16);
-        $category = DB::table('category') ->get();
+       $search = ModelsProduct::where('Title', 'like', "%$key%")->get();
+        $category = MongoCategory::all();
         return view('pages.Product.search', compact('search', 'category', 'key' ));
     }
 
     public function getloc(Request $request)
 
     {
-        $sort= $request->sort;
-        if ($sort=='tang_dan') {
-            $loc = DB::table('products')->orderby('Price','ASC') ->paginate(16);
+        $sort = $request->sort;
 
-        } else if($sort=='giam_dan') {
-            $loc = DB::table('products')->orderby('Price','desc') ->paginate(16);
-        }else if($sort=='kytu_az') {
-            $loc = DB::table('products')->orderby('Title','ASC') ->paginate(16);
-        }else {
-            $loc = DB::table('products')->orderby('Title','desc') ->paginate(16);
+        if ($sort == 'tang_dan') {
+            $loc = ModelsProduct::orderBy('Price', 'ASC')->paginate(16);
+
+        } else if ($sort == 'giam_dan') {
+            $loc = ModelsProduct::orderBy('Price', 'DESC')->paginate(16);
+
+        } else if ($sort == 'kytu_az') {
+            $loc = ModelsProduct::orderBy('Title', 'ASC')->paginate(16);
+
+        } else {
+            $loc = ModelsProduct::orderBy('Title', 'DESC')->paginate(16);
         }
 
+        $category = MongoCategory::all();
 
-        $category = DB::table('category') ->get();
-        return view('pages.Product.loc', compact('loc', 'category', ));
+        return view('pages.Product.loc', compact('loc', 'category'));
     }
 
     public function getmuangay()
     {
-        $product = DB::table('products')->orderby('id','desc')->paginate(20);
-        $category = DB::table('category') ->get();
+        $product = ModelsProduct::orderby('id','desc')->paginate(20);
+        $category = MongoCategory::all();
         return view('pages.muangay', compact('product','category'));
     }
      public function getgioithieu()
     {
-        $category = DB::table('category') ->get();
+        $category = MongoCategory::all();
         return view('pages.gioithieu', compact('category'));
     }
     public function gettintuc()
 
     {
-        $category = DB::table('category') ->get();
-        $blog = DB::table('blog')->orderby('id','desc')->paginate(5);
-        return view('pages.tintuc', compact('blog','category' ));
+        $category = MongoCategory::all();
+        $blog = Blog::orderBy('_id', 'desc')->paginate(5);
+
+        return view('pages.tintuc', compact('blog', 'category'));
+
     }
     public function getlienhe()
     {
-        $category = DB::table('category') ->get();
+        $category = MongoCategory::all();
         return view('pages.lienhe', compact('category'));
     }
 
@@ -101,7 +120,7 @@ class PageController extends Controller
 
         );
         $insertData = DB::table('contact')->insert($dataInsert);
-        $category = DB::table('category') ->get();
+        $category = MongoCategory::all();
         return view('pages.lienhe', compact('category'));
 
     }
@@ -122,11 +141,13 @@ class PageController extends Controller
         return view('Admin.contact_feedback');
     }
 
-    public function getalllienhe(){
-
-        $con = DB::table('contact')->orderby('id','desc')->paginate(5);
-        return view('Admin.all_contact')->with(compact('con'));
+    public function getalllienhe()
+    {
+        $con = Contact::orderBy('_id', 'desc')->paginate(5);
+        return view('Admin.all_contact', compact('con'));
     }
+
+
 
     public function  getcontact_feedback(){
         return view('Admin.contact_feedback');
@@ -141,128 +162,173 @@ class PageController extends Controller
 
         return view('pages.product.thanhtoan');
     }
-    public function getchitietsanpham($id)
-    {
-        $sanpham =DB::table('products')->where('product_id',$id)->first();
-        $namecategory = DB::table('category')->where('Category_ID',$sanpham->Category_ID)->first();
-        $category = DB::table('category') ->get();
-        $new = DB::table('products') -> where('hot','1')->orderby('id','desc') ->paginate(12);
-        return view('pages.product.chitietsanpham', compact('category','sanpham', 'new', 'namecategory'));
+        public function getchitietsanpham($id)
+        {
+            $sanpham = ModelsProduct::where('product_id', (string)$id)->first();
 
-    }
+            $namecategory = MongoCategory::where('Category_ID', (string)$sanpham->Category_ID)->first();
 
-    public function getsanpham($id)
+            // Lấy tất cả danh mục
+            $category = MongoCategory::all();
 
-    {
-        $category = DB::table('category') ->get();
-        $sanpham = DB::table('products')-> where('Category_ID',$id)->orderby('id','desc') ->get();
-        $namecategory = DB::table('category')->find($id);
-        return view('pages.sanpham')->with('sanpham',$sanpham)->with('category',$category)->with('namecategory',$namecategory);
-    }
-    public function getaddtocart($id)
+            // Sản phẩm HOT
+            $new = ModelsProduct::where('hot', 1)->orderBy('id', 'desc')->paginate(12);
 
-    {
-        $product =DB::table('products')->where('product_id',$id)->first();
-     $cart = session()-> get('cart');
-     if(isset($cart[$id])){
-        $cart[$id]['quantity'] = $cart[$id]['quantity']+1;
-
-     }else{
-        $cart[$id]=[
-            'name' =>$product->Title,
-            'price' =>$product->Discount,
-            'quantity'=>1,
-            'image'=>$product->Thumbnail
-
-        ];
-    }
-        session()->put('cart',$cart);
-        return response()->json([
-                'code'=>200,
-                'massage'=>'success'
-            ], 200);
-
-}
-public function getgiohang()
-{
-    $category = DB::table('category') ->get();
-    $carts = session()->get('cart');
-    $city = City::orderby('matp','ASC')->get();
-    $province = Province::orderby('maqh','ASC')->get();
-    $wards = Wards::orderby('xaid','ASC')->get();
-    return view('pages.product.giohang', compact('category', 'carts', 'city', 'province','wards' ));
-}
-public function postgiohang(Request $Request)
-{
-    if ($Request->isMethod('post')){
-
-        $validator = Validator ::make($Request->all(),[
-            'wards'=>'required',
-                'province'=>'required',
-                'city'=>'required',
-        ], [
-            'province.required' => 'Trường này là trường bắt buộc',
-            'wards.required' => 'Trường này là trường bắt buộc',
-            'city.required' => 'Trường này là trường bắt buộc',
-        ]);
-
-        if($validator->fails()){
-            return redirect()->back()
-            ->withErrors($validator)
-            ->withInput();
+            return view('pages.product.chitietsanpham', compact('category', 'sanpham', 'new', 'namecategory'));
 
         }
-        $allRequest  = $Request->all();
 
-                $coupon = $allRequest['coupon'];
-                $matp = $allRequest['city'];
-                $maqh = $allRequest['province'];
-                $xaid = $allRequest['wards'];
-                $wards = Wards::where('xaid',$allRequest['wards'])->first();
-                $province = Province::where('maqh',$allRequest['province'])->first();
-                $city = City::where('matp',$allRequest['city'])->first();
-                $add= implode(' ,', array($wards->name_xaphuong, $province->name_quanhuyen, $city->name_city));
-                Session::put('add',$add);
-                Session::save();
-            if($matp){
-                $feeship = Freeship::where('fee_matp',$matp)->where('fee_maqh',$maqh)->where('fee_xaid',$xaid)->get();
-                $coupon = Coupon::where('coupon_code',$coupon)->get();
+    public function getsanpham($id)
+    {
+        // Lấy danh mục theo Category_ID (string)
+        $namecategory = MongoCategory::where('Category_ID', (string)$id)->first();
 
-                foreach($feeship as $key=> $fee){
-                    Session::put('fee',$fee->fee_feeship);
-                    Session::save();
-                }
-                foreach($coupon as $key=> $cou){
-                    Session::put('cou',$cou->coupon_number);
-                    Session::save();
-                }
+        // Lấy tất cả danh mục
+        $category = MongoCategory::all();
 
-                return Redirect::to('thanhtoan');
+        // LẤY SẢN PHẨM TỪ MONGO
+        $sanpham = ModelsProduct::where('Category_ID', (int)$id)->get();
 
-
-}
-
-
-}
-
-}
-public function getdeletecart( Request $request)
+        return view('pages.sanpham', compact('sanpham', 'category', 'namecategory'));
+    }
+    public function getaddtocart($id)
 {
-    if($request->id){
-        $carts = session()->get('cart');
-        unset($carts[$request->id]);
-        session()->put('cart', $carts);
-        $carts = session()->get('cart');
-        $category = DB::table('category') ->get();
-        $dete = view('pages.Product.giohang', compact('carts','category'))->render();
-        return response()->json(['cart_component' =>$dete, 'code'=>200],200);
+    $product = ModelsProduct::where('product_id', $id)->first();
+    $cart = session()->get('cart', []);
+
+    if (isset($cart[$id])) {
+        $cart[$id]['quantity'] = $cart[$id]['quantity'] + 1;
+    } else {
+        $cart[$id] = [
+            'name'     => $product->Title,
+            'price'    => $product->Discount,
+            'quantity' => 1,
+            'image'    => $product->Thumbnail,
+        ];
+    }
+
+    session()->put('cart', $cart);
+
+    // Tính tổng số lượng hiện tại trong giỏ hàng
+    $totalQty = 0;
+    foreach ($cart as $item) {
+        $totalQty += $item['quantity'];
+    }
+
+    return response()->json([
+        'code'     => 200,
+        'message'  => 'success',
+        'cartQty'  => $totalQty,     // TRUYỀN VỀ SỐ LƯỢNG
+    ], 200);
+}
+
+public function getgiohang()
+{
+    $category = MongoCategory::all();
+    $carts = session()->get('cart',[]);
+
+    // Lấy danh sách tỉnh → huyện → xã từ API
+    $json = file_get_contents("https://provinces.open-api.vn/api/?depth=3");
+    $locations = json_decode($json, true);
+
+    return view('pages.product.giohang', compact('category', 'carts', 'locations'));
+}
+
+
+public function postgiohang(Request $request)
+{
+    if ($request->isMethod('post')) {
+
+        $validator = Validator::make($request->all(), [
+            'city'     => 'required',
+            'province' => 'required',
+            'wards'    => 'required',
+        ], [
+            'city.required'     => 'Trường này là trường bắt buộc',
+            'province.required' => 'Trường này là trường bắt buộc',
+            'wards.required'    => 'Trường này là trường bắt buộc',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        // Lấy dữ liệu API (tỉnh - huyện - xã)
+        $json = file_get_contents("https://provinces.open-api.vn/api/?depth=3");
+        $locations = json_decode($json, true);
+
+        $cityCode     = $request->city;
+        $districtCode = $request->province;
+        $wardCode     = $request->wards;
+        $couponCode   = $request->coupon;
+
+        // Tìm theo mã
+        $city     = collect($locations)->firstWhere('code', $cityCode);
+        $district = collect($city['districts'])->firstWhere('code', $districtCode);
+        $ward     = collect($district['wards'])->firstWhere('code', $wardCode);
+
+        // Ghép lại địa chỉ
+        $address = $ward['name'] . ' , ' . $district['name'] . ' , ' . $city['name'];
+        Session::put('add', $address);
+
+        // Xử lý phí ship (vẫn trong DB Freeship)
+        $feeship = Freeship::where('city_code', $cityCode)
+                   ->where('district_code', $districtCode)
+                   ->where('ward_code', $wardCode)
+                   ->first();
+
+
+        if ($feeship) {
+            Session::put('fee', $feeship->fee);
+        }
+
+        // Xử lý coupon
+        $coupon = Coupon::where('coupon_code', $couponCode)->first();
+        if ($coupon) {
+            Session::put('cou', $coupon->coupon_number);
+        }
+
+        Session::save();
+
+        return redirect()->to('thanhtoan');
     }
 }
 
+public function getdeletecart(Request $request)
+{
+    if ($request->id) {
+
+        $carts = session()->get('cart', []);
+
+        // Xoá sản phẩm
+        unset($carts[$request->id]);
+        session()->put('cart', $carts);
+
+        // Tính lại tổng tiền
+        $total = 0;
+        foreach ($carts as $item) {
+            $total += $item['price'] * $item['quantity'];
+        }
+
+        // Render lại table
+        $html = view('pages.product.component_cart_table', [
+            'carts' => $carts,
+            'total' => $total
+        ])->render();
+
+        // Tính số lượng giỏ hàng
+        $totalQty = array_sum(array_column($carts, 'quantity'));
+
+        return response()->json([
+            'html'  => $html,
+            'qty'   => $totalQty,
+            'total' => number_format($total),
+            'code'  => 200
+        ]);
+    }
 }
 
 
-
-
-
-
+}

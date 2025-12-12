@@ -3,98 +3,114 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
-use App\Slider;
-use App\Models\OrderDetail;
-use App\Models\Shipping;
-use App\Models\Order;
-use App\Models\Customer;
-use App\Models\Coupon;
-use App\Http\Requests;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Mail;
 
-
-session_start();
+use App\Models\Order;
+use App\Models\OrderDetail;
+use App\Models\Customer;
+use App\Models\Product;
 
 class OrderController extends Controller
 {
     public function __construct() {
         $this->middleware('auth');
     }
+
+    // ============================
+    //   QUẢN LÝ ĐƠN HÀNG
+    // ============================
+
     public function manage_order(){
 
+        // Lấy đơn hàng + thông tin khách hàng (MongoDB không join được)
+        $orders = Order::orderBy('_id','desc')->get();
 
-        $all_order = DB::table('order')
-        ->join('customer','order.customer_id','=','customer.id')
-        ->select('order.*','customer.FullName')
-        ->orderby('order.id','desc')->get();
-        $manager_order  = view('admin.manage_order')->with('all_order',$all_order);
-        return view('index_Admin')->with('admin.manage_order', $manager_order);
-    }
-    public function handle_product($id){
-        $dataUpdate = array(
-            'order_status' => '1'
+        foreach ($orders as $order) {
+            $order->customer = Customer::where('_id', $order->customer_id)->first();
+        }
 
+        return view('index_Admin')->with(
+            'admin.manage_order',
+            view('admin.manage_order')->with('all_order', $orders)
         );
-        $ud= DB::table('order')->where('id',$id)->update($dataUpdate);
+    }
+
+    // ============================
+    //   DUYỆT ĐƠN
+    // ============================
+
+    public function handle_product($id){
+
+        // Update trạng thái đơn
+        Order::where('_id', $id)->update([
+            'order_status' => 1
+        ]);
+
         $carts = session()->get('cart');
 
-        $order_details = OrderDetail::where('order_id',$id)->get();
-        $orders = Order::where('id',$id)->first();
-        $customer = Customer::where('id', $orders->customer_id)->first();
-        Mail::send('pages.Product.email', compact('customer', 'carts','orders', 'order_details'), function ($message) use($customer) {
+        // Lấy thông tin đơn + khách hàng
+        $order_details = OrderDetail::where('order_id', $id)->get();
+        $order = Order::where('_id', $id)->first();
+        $customer = Customer::where('_id', $order->customer_id)->first();
+
+        // Gửi email
+        Mail::send('pages.Product.email', compact('customer','carts','order','order_details'), function ($message) use ($customer) {
             $message->from('nghiantk.21it@vku.udn.vn', 'Shop D&N');
-            $message->to( $customer->email , $customer->email);
+            $message->to($customer->email, $customer->email);
             $message->subject('Thông báo đặt hàng');
         });
-        // $this->guiEmail($customer,  $email, $carts);
-        foreach ($carts as $key => $item ){
-            $user = DB::table('products')->where('product_id', $key)->first();
-            $quantity = $item['quantity'];
-           $quantity1 = $user->quantity - $quantity;
-           $dataInsert = array(
-            'quantity' => $quantity1
 
-        );
-           $ud= DB::table('products')->where('product_id',$key)->update($dataInsert);
+        // Trừ số lượng sản phẩm
+        foreach ($carts as $product_id => $item) {
+            $product = Product::where('product_id', $product_id)->first();
+            if ($product) {
+                $new_quantity = $product->quantity - $item['quantity'];
+                Product::where('product_id', $product_id)->update([
+                    'quantity' => $new_quantity
+                ]);
+            }
         }
+
         return Redirect::to('manage-order');
     }
 
+    // ============================
+    //   XEM ĐƠN HÀNG
+    // ============================
+
     public function view_order($id){
 
-        $order_details = OrderDetail::where('order_id',$id)->get();
-        //     $product = $pro->product_id;
-        $order = Order::where('id',$id)->get();
-        $orders = Order::where('id',$id)->first();
-        foreach($order as $key => $ord){
-            $customer_id = $ord->customer_id;
-            // $shipping_id = $ord->shipping_id;
-            $order_status = $ord->order_status;
-        }
+        $order_details = OrderDetail::where('order_id', $id)->get();
+        $order = Order::where('_id', $id)->first();
+        $customer = Customer::where('id_user', $order->customer_id)->first();
+        $order_status = $order->order_status;
 
-
-        $customer = Customer::where('id',$customer_id)->first();
-        return view('admin.view_order')->with(compact('order_details','customer','order_details','orders','order_status'));
+        return view('admin.view_order')->with(compact(
+            'order_details',
+            'customer',
+            'order',
+            'order_status'
+        ));
     }
+
+    // ============================
+    //   IN HÓA ĐƠN
+    // ============================
+
     public function receipt($id){
 
-        $order_details = OrderDetail::where('order_id',$id)->get();
-        //     $product = $pro->product_id;
-        $order = Order::where('id',$id)->get();
+        $order_details = OrderDetail::where('order_id', $id)->get();
+        $order = Order::where('_id', $id)->first();
+        $customer = Customer::where('id_user', $order->customer_id)->first();
+        $order_status = $order->order_status;
 
-        $orders = Order::where('id',$id)->first();
-        // dd($order_details);
-        foreach($order as $key => $ord){
-            $customer_id = $ord->customer_id;
-            // $shipping_id = $ord->shipping_id;
-            $order_status = $ord->order_status;
-        }
-
-
-        $customer = Customer::where('id',$customer_id)->first();
-        return view('admin.Receipt')->with(compact('order_details','customer','order_details','orders','order_status'));
+        return view('admin.Receipt')->with(compact(
+            'order_details',
+            'customer',
+            'order',
+            'order_status'
+        ));
     }
 }

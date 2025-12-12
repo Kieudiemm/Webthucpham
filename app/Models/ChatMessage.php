@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Jenssegers\Mongodb\Eloquent\SoftDeletes;
+use Jenssegers\Mongodb\Eloquent\Model;
 
 class ChatMessage extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
 
-    protected $table = 'chat_messages';
+    protected $connection = 'mongodb';
+    protected $collection = 'chat_messages';
 
     protected $fillable = [
         'user_id',

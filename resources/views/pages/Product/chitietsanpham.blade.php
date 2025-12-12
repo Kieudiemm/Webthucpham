@@ -228,7 +228,7 @@
     <div class="container">
       <div class="row no-gutters slider-text align-items-center justify-content-center">
         <div class="col-md-9 ftco-animate text-center">
-            <p class="breadcrumbs"><span class="mr-2"><a href="index.html">Trang chủ</a></span> <span>Sản phẩm</span></p>
+            <p class="breadcrumbs"><span class="mr-2"><a href=" ">Trang chủ</a></span> <span>Sản phẩm</span></p>
           <h1 class="mb-0 bread" id="detail"> {{$sanpham->Title}}</h1>
         </div>
       </div>
@@ -241,7 +241,7 @@
                 <div class="product__details__pic">
                     <div class="product__details__pic__item">
                         <img class="product__details__pic__item--large"
-                            src="Asset/images/{{$sanpham->Thumbnail}}" alt="" style="">
+                            src="{{ asset('Asset/images/' . $sanpham->Thumbnail) }}" alt="" style="">
                     </div>
                 </div>
             </div>
@@ -331,7 +331,7 @@
           @foreach ($new as $key => $item )
             <div class="col-md-6 col-lg-3 ftco-animate">
                 <div class="product">
-                    <a href="{{route('chitietsanpham', ['id'=> $item->product_id])}}" class="img-prod"><img class="img-fluid" id="Product_img_{{$item->product_id}}" src="Asset/images/{{$item->Thumbnail}}" alt="D&N">
+                    <a href="{{route('chitietsanpham', ['id'=> $item->product_id])}}" class="img-prod"><img class="img-fluid" id="Product_img_{{$item->product_id}}" src="{{ asset('Asset/images/' . $item->Thumbnail) }}" alt="D&N">
                         <div class="overlay"></div>
                     </a>
                     <div class="text py-3 pb-4 px-3 text-center">

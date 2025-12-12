@@ -144,7 +144,7 @@
         @foreach ($hot as $key => $item )
           <div class="col-md-6 col-lg-3 ftco-animate">
               <div class="product">
-                  <a href="{{URL::to('/view'.$item->product_id)}}" class="img-prod"><img class="img-fluid" id="Product_img_{{$item->product_id}}" src="Asset/images/{{$item->Thumbnail}}" alt="D&N">
+                  <a href="{{route('chitietsanpham', ['id'=> $item->product_id])}}" class="img-prod"><img class="img-fluid" id="Product_img_{{$item->product_id}}" src="Asset/images/{{$item->Thumbnail}}" alt="D&N">
                       <div class="overlay"></div>
                   </a>
                   <div class="text py-3 pb-4 px-3 text-center">
@@ -152,6 +152,9 @@
                       <div class="d-flex">
                           <div class="pricing">
                               <p class="price" id="Product_price_{{$item->product_id}}" title="{{$item->Discount}}"><span>{{number_format($item->Discount,0,',','.')}}đ</span></p>
+                              <p class="mt-2" style="font-size: 14px; color: #555;">
+                                <strong>Size:</strong> {{ $item->weight ?? 'Không có' }} kg
+                            </p>
                           </div>
                       </div>
                       <div class="bottom-area d-flex px-3">
@@ -162,9 +165,11 @@
                               <a href="#" id="addtocart" class="addtocart d-flex justify-content-center align-items-center mx-1" data-url="{{ route('addtocart', ['id'=>$item->product_id]) }}" onclick="addtocart">
                                   <span><i class="ion-ios-cart"></i></span>
                               </a>
-                              <a  class="heart d-flex justify-content-center align-items-center " id="{{$item->product_id}}" onclick="add_wistlist(this.id);">
-                                  <span><i class="ion-ios-heart"></i></span>
-                              </a>
+                              <a class="heart d-flex justify-content-center align-items-center"
+                                id="{{$item->product_id}}"
+                                onclick="handleWishlistClick(this)">
+                                <span><i class="ion-ios-heart"></i></span>
+                            </a>
                           </div>
                       </div>
                       <script>
@@ -209,22 +214,23 @@
   <div class="row ftco-animate">
     <div class="col-md-12">
       <div class="carousel-testimony owl-carousel">
-        @foreach ($blog as $key => $item )
+        @foreach ($blog as $key => $item)
         <div class="item">
-          <div class="testimony-wrap p-4 pb-5">
+        <div class="testimony-wrap p-4 pb-5">
             <div class="user-img mb-5" style="background-image: url(Asset/images/{{$item->BlogImg}})">
-              <span class="quote d-flex align-items-center justify-content-center">
+            <span class="quote d-flex align-items-center justify-content-center">
                 <i class="icon-quote-left"></i>
-              </span>
+            </span>
             </div>
             <div class="text text-center">
                 <p class="name">{{$item->BlogName}}</p>
-              <p class="mb-5 pl-4 line">{{$item->BlogContent}}</p>
-              <span class="position">{{$item->Created_at}}</span>
+                <p class="mb-5 pl-4 line">{{$item->BlogContent}}</p>
+                <span class="position">{{$item->Created_at}}</span>
             </div>
-          </div>
+        </div>
         </div>
         @endforeach
+
       </div>
     </div>
   </div>
