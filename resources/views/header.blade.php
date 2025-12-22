@@ -65,6 +65,7 @@
             <li class="nav-item"><a href="{{ route('gioithieu') }}" class="nav-link">Giới thiệu</a></li>
             <li class="nav-item"><a href="{{ route('tintuc') }}" class="nav-link">Tin tức</a></li>
             <li class="nav-item"><a href="{{ route('lienhe') }}" class="nav-link">Liên hệ</a></li>
+            <li class="nav-item"><a href="{{ route('recipe.suggest.form') }}" class="nav-link">Gợi ý món ăn (AI)</a></li>
 
             {{-- GIỎ HÀNG + BADGE ĐẾM SỐ LƯỢNG --}}
             <li class="nav-item cta cta-colored">
@@ -83,6 +84,7 @@
                     </a>
                     <div class="dropdown-menu" aria-labelledby="dropdown04">
                         <a class="dropdown-item" href="{{ route('donmua') }}">Đơn mua</a>
+                        <a class="dropdown-item" href="{{ route('recipe.my_recipes') }}">Công thức của tôi</a>
                         <a class="dropdown-item" href="{{ route('logout') }}">Đăng xuất</a>
                     </div>
                 </li>

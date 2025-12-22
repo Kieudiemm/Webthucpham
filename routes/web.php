@@ -12,6 +12,9 @@ Use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\GeminiContentController;
+use App\Http\Controllers\MongoCategoryController;
+use App\Http\Controllers\RecipeController;
 
 
 /*
@@ -129,7 +132,10 @@ Route::post('/wishlist/add', [App\Http\Controllers\WishlistController::class, 'a
 
 Route::get('/view/{id}', [App\Http\Controllers\PageController::class, 'getchitietsanpham'])->name('chitietsanpham');
 
-Route::get('/{id}', [App\Http\Controllers\PageController::class, 'getsanpham'])->name('sanpham');
+// Chỉ match Category_ID dạng số (tránh nuốt các route chữ như /goi-y-mon-an, /category,...)
+Route::get('/{id}', [App\Http\Controllers\PageController::class, 'getsanpham'])
+    ->whereNumber('id')
+    ->name('sanpham');
 
 Route::get('/sanpham/addtocart/{id}', [App\Http\Controllers\PageController::class, 'getaddtocart'])->name('addtocart');
 Route::get('/sanpham/delete-cart', [App\Http\Controllers\PageController::class, 'getdeletecart'])->name('deletecart');
@@ -146,9 +152,20 @@ Route::post('/loc', [App\Http\Controllers\PageController::class, 'getloc'])->nam
 Route::get('/chat/messages', [App\Http\Controllers\ChatbotController::class, 'fetchMessages']);
 Route::post('/chat/send', [App\Http\Controllers\ChatbotController::class, 'sendMessage']);
 
-use App\Http\Controllers\MongoCategoryController;
+// Tạo bài viết bằng AI (Gemini) - prompt tự nhập
+Route::get('/ai/tao-bai-viet', [GeminiContentController::class, 'showForm'])->name('ai.article.form');
+Route::post('/ai/tao-bai-viet', [GeminiContentController::class, 'generate'])->name('ai.article.generate');
 
 Route::get('/category', [MongoCategoryController::class, 'index']);
+
+// Gợi ý món ăn bằng AI (Gemini) - Yêu cầu đăng nhập
+Route::middleware(['auth'])->group(function () {
+    Route::get('/goi-y-mon-an', [RecipeController::class, 'showForm'])->name('recipe.suggest.form');
+    Route::post('/goi-y-mon-an', [RecipeController::class, 'handleSuggestion'])->name('recipe.suggest.submit');
+    Route::post('/goi-y-mon-an/add-to-cart', [RecipeController::class, 'addToCart'])->name('recipe.add_to_cart');
+    Route::get('/cong-thuc-cua-toi', [RecipeController::class, 'myRecipes'])->name('recipe.my_recipes');
+    Route::get('/cong-thuc/{id}', [RecipeController::class, 'getRecipeDetail'])->name('recipe.detail');
+});
 
 
 
